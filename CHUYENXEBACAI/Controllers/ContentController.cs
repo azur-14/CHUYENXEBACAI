@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CHUYENXEBACAI.Infrastructure.EF;
-using System.Linq;                     // <-- cần cho .ToList()
-using System.Collections.Generic;      // <-- List<>
+using System.Linq;                     
+using System.Collections.Generic;    
 
 namespace CHUYENXEBACAI.Controllers;
 

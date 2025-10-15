@@ -16,7 +16,7 @@ public class CheckinsController(AppDbContext db) : ControllerBase
             id = Guid.NewGuid(),
             session_id = dto.SessionId,
             user_id = dto.UserId,
-            Method = dto.Method, // enum property (PascalCase)
+            Method = dto.Method,
             Status = CHUYENXEBACAI.Domain.CheckinStatus.OnTime,
             lat = dto.Lat,
             lng = dto.Lng,

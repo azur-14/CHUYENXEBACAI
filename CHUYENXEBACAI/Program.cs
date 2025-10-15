@@ -14,7 +14,9 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Controllers + JSON (enum dạng chuỗi, DateOnly)
+// ---------------------------
+// 1) Controllers + JSON
+// ---------------------------
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
     {
@@ -22,12 +24,27 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
     });
 
+// ---------------------------
+// 2) Swagger (single place)
+// ---------------------------
 builder.Services.AddEndpointsApiExplorer();
-
-// 2) Swagger + Bearer
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CHUYENXEBACAI API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "CHUYENXEBACAI API",
+        Version = "v1",
+        Description = "Backend .NET 8 + PostgreSQL (JWT)"
+    });
+
+    // Tránh đụng trùng schemaId giữa các lớp trùng tên khác namespace
+    c.CustomSchemaIds(t => t.FullName!.Replace('+', '_'));
+
+    // Map các kiểu không mặc định
+    c.MapType<DateOnly>(() => new OpenApiSchema { Type = "string", Format = "date" });
+    c.MapType<TimeOnly>(() => new OpenApiSchema { Type = "string", Format = "time" });
+
+    // JWT trên Swagger
     var scheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -35,16 +52,16 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhập token dạng: Bearer {token}"
+        Description = "Nhập token: Bearer {token}"
     };
     c.AddSecurityDefinition("Bearer", scheme);
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { scheme, Array.Empty<string>() }
-    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement { { scheme, Array.Empty<string>() } });
 });
 
-// 3) Kết nối Postgres + map ENUM
+
+// ---------------------------
+// 3) PostgreSQL + enum mapping
+// ---------------------------
 var cs = builder.Configuration.GetConnectionString("Default")
          ?? "Host=localhost;Port=5432;Database=chuyenxebacai;Username=app_user;Password=changeme;Include Error Detail=true";
 
@@ -73,7 +90,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(dataSource)
        .UseSnakeCaseNamingConvention());
 
+// ---------------------------
 // 4) JWT Auth
+// ---------------------------
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton<IJwtService, JwtService>();
 
@@ -90,29 +109,39 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero // tránh lệch giờ gây 401
+            ClockSkew = TimeSpan.Zero
         };
     });
 
 builder.Services.AddAuthorization();
 
+// ---------------------------
 // 5) CORS (dev)
+// ---------------------------
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
 
+// ---------------------------
 // Pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
+// ---------------------------
 app.UseCors();
-app.UseAuthentication();  
+
+// Nếu bạn muốn Swagger luôn bật:
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CHUYENXEBACAI API v1");
+    c.RoutePrefix = "swagger";   // => /swagger
+});
+
+// Nếu đang chạy HTTPS profile, bật redirect; còn đang chạy HTTP (5013) có thể tắt dòng dưới
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();

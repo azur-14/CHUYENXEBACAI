@@ -13,3 +13,4 @@ public class ErrorController : ControllerBase
         return Problem(title: "Unexpected error", detail: ex?.Message, statusCode: 500);
     }
 }
+                                                                       

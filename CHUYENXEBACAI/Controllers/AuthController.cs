@@ -10,11 +10,11 @@ namespace CHUYENXEBACAI.Controllers;
 [Route("api/[controller]")]
 public class AuthController(AppDbContext db, IJwtService jwt) : ControllerBase
 {
-    public record RegisterDto(string Email, string Password, string FullName, string? Phone);
+    public record RegisterUserDto(string Email, string Password, string FullName, string? Phone);
     public record LoginDto(string Email, string Password);
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
     {
         if (await db.users.AnyAsync(u => u.email == dto.Email))
             return Conflict("Email already exists.");

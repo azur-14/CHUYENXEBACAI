@@ -10,32 +10,28 @@ public record CreateSessionDto(Guid CampaignId, string? Title, DateOnly SessionD
 public record RegisterDto(Guid UserId, Guid CampaignId, Guid? SessionId);
 public record ReviewRegistrationDto(CHUYENXEBACAI.Domain.RegistrationStatus Status, string? RejectReason);
 
-// ===== Identity =====
+// Identity 
 public record CreateUserDto(
     [EmailAddress] string Email,
-    string PasswordHash,           // demo: client gửi sẵn hash; thực tế hãy dùng BCrypt ở server
+    string PasswordHash,           
     string FullName,
     string? Phone
 );
 public record AssignRoleDto(Guid UserId, string RoleCode);
 
-// ===== Volunteers =====
+// Volunteers
 public record SubmitVolunteerAppDto(Guid UserId, string? Skills, string? Availability);
 public record ReviewVolunteerAppDto(AppReviewStatus Status, string? RejectReason);
 
-// ===== Check-ins / Media =====
+// Check-ins / Media
 public record CreateCheckinDto(Guid SessionId, Guid UserId, CheckinMethod Method, double? Lat, double? Lng, string? EvidenceNote);
 public record CreateMediaDto(Guid CampaignId, Guid CheckinId, string Url, string? PublicId, string? ThumbUrl, string? Format);
 
-// ===== Finance =====
+// Finance
 public record CreateExpenseDto(Guid CampaignId, Guid? SessionId, string? Category, string? Description, decimal Amount, Currency Currency, string? PaymentMethod, Guid? PayerId, string? ReceiptUrl, string? Note);
 public record UpsertDonationDto(Guid CampaignId, string? DonorName, string? DonorEmail, decimal Amount, Currency Currency, bool WishToShowName, string? Message, DonationGateway? Gateway, string? OrderCode, DonationStatus? Status, DateTime? PaidAt);
-
-// ===== Reconciliation =====
 public record UpsertFundTxDto(Guid CampaignId, FundSource Source, string RefId, decimal Amount, DateTime OccurredAt, Guid? DonationId);
 public record DecideMatchDto(ReconcileDecision Decision, string? Note);
-
-// ===== Content & Comms =====
 public record UpsertPostDto(Guid CampaignId, string Title, string? ContentMd, string? CoverUrl, PostStatus Status);
 public record UpsertFaqDto(string Question, string? AnswerMd, string[]? Tags, int? OrderNo);
 public record SubscribeDto([EmailAddress] string Email, bool Consent);
