@@ -1,0 +1,1087 @@
+openapi: 3.0.3
+info:
+  title: CHUYENXEBACAI API
+  version: "1.1.0"
+  description: |
+    Volunteer Campaign Management API (ASP.NET Core .NET 8 + PostgreSQL)
+
+    - Auth: JWT Bearer
+    - Requests use PascalCase; Responses are snake_case
+    - Dates: `YYYY-MM-DD`; DateTime: ISO8601 UTC (`...Z`)
+
+servers:
+  - url: http://localhost:5013
+    description: Local Dev
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Campaigns
+  - name: Sessions
+  - name: Registrations
+  - name: VolunteerApplications
+  - name: Checkins
+  - name: Media
+  - name: Finance
+  - name: Content
+  - name: Dashboard
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserDto'
+      responses:
+        '200':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  email: { type: string }
+        '409': { description: Email already exists }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and get access token (JWT)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginDto' }
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+        '401': { description: Unauthorized }
+
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users (paged)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paged users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUsers'
+    post:
+      tags: [Users]
+      summary: Create user (admin or system)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUserDto' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '409': { description: Email already exists }
+
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404': { description: Not found }
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUserDto' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404': { description: Not found }
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /api/users/{id}/status:
+    patch:
+      tags: [Users]
+      summary: Update user status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              enum: [ACTIVE, INACTIVE]
+      responses:
+        '204': { description: Updated }
+        '404': { description: Not found }
+
+  /api/users/{id}/roles:
+    post:
+      tags: [Users]
+      summary: Assign a role to user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignRoleDto' }
+      responses:
+        '200':
+          description: Role list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  /api/campaigns:
+    get:
+      tags: [Campaigns]
+      summary: List campaigns (paged)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paged campaigns
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedCampaigns' }
+    post:
+      tags: [Campaigns]
+      summary: Create campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCampaignDto' }
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Campaign' }
+
+  /api/campaigns/{id}:
+    get:
+      tags: [Campaigns]
+      summary: Get campaign by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Campaign' }
+        '404': { description: Not found }
+    patch:
+      tags: [Campaigns]
+      summary: Update campaign status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCampaignStatusDto' }
+      responses:
+        '204': { description: Updated }
+        '404': { description: Not found }
+    delete:
+      tags: [Campaigns]
+      summary: Delete campaign
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /api/sessions/by-campaign/{campaignId}:
+    get:
+      tags: [Sessions]
+      summary: List sessions by campaign
+      parameters:
+        - in: path
+          name: campaignId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Session' }
+
+  /api/sessions:
+    post:
+      tags: [Sessions]
+      summary: Create session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSessionDto' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '409': { description: Duplicate (campaign_id, session_date, shift) }
+
+  /api/sessions/registrations:
+    post:
+      tags: [Registrations]
+      summary: Register volunteer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRegistrationDto' }
+      responses:
+        '200':
+          description: Registration
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerRegistration' }
+        '409': { description: Already registered }
+
+  /api/sessions/registrations/{id}/review:
+    post:
+      tags: [Registrations]
+      summary: Review registration (approve/reject)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewRegistrationDto' }
+      responses:
+        '204': { description: Reviewed }
+        '404': { description: Not found }
+
+  /api/volunteers/registrations:
+    get:
+      tags: [Registrations]
+      summary: List registrations (paged)
+      parameters:
+        - in: query
+          name: campaignId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: sessionId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/RegistrationStatus' }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Paged registrations
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedRegistrations' }
+
+  /api/volunteers/registrations/{id}:
+    get:
+      tags: [Registrations]
+      summary: Get registration by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Registration
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerRegistration' }
+        '404': { description: Not found }
+    delete:
+      tags: [Registrations]
+      summary: Delete registration
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /api/volunteers/applications:
+    get:
+      tags: [VolunteerApplications]
+      summary: List applications (paged)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/AppReviewStatus' }
+      responses:
+        '200':
+          description: Paged applications
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedVolunteerApplications' }
+    post:
+      tags: [VolunteerApplications]
+      summary: Create application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitVolunteerAppDto' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerApplication' }
+
+  /api/volunteers/applications/{id}:
+    get:
+      tags: [VolunteerApplications]
+      summary: Get application by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Application
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerApplication' }
+        '404': { description: Not found }
+    put:
+      tags: [VolunteerApplications]
+      summary: Update application
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitVolunteerAppDto' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerApplication' }
+        '404': { description: Not found }
+    delete:
+      tags: [VolunteerApplications]
+      summary: Delete application
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { description: Not found }
+
+  /api/volunteers/applications/{id}/review:
+    post:
+      tags: [VolunteerApplications]
+      summary: Review an application (approve/reject)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewVolunteerAppDto' }
+      responses:
+        '204': { description: Reviewed }
+        '404': { description: Not found }
+
+  /api/checkins:
+    post:
+      tags: [Checkins]
+      summary: Create a check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCheckinDto' }
+      responses:
+        '200':
+          description: Checkin
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Checkin' }
+
+  /api/media:
+    post:
+      tags: [Media]
+      summary: Create media asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMediaDto' }
+      responses:
+        '200':
+          description: Media
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MediaAsset' }
+
+  /api/finance/donations:
+    get:
+      tags: [Finance]
+      summary: List donations by campaign
+      parameters:
+        - in: query
+          name: campaignId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Donations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Donation' }
+
+  /api/content/posts/by-campaign/{campaignId}:
+    get:
+      tags: [Content]
+      summary: List posts by campaign (public)
+      security: []
+      parameters:
+        - in: path
+          name: campaignId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Post' }
+
+  /api/content/posts:
+    post:
+      tags: [Content]
+      summary: Upsert post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpsertPostDto' }
+      responses:
+        '200':
+          description: Post
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+
+  /api/content/faqs:
+    get:
+      tags: [Content]
+      summary: List FAQs (public)
+      security: []
+      responses:
+        '200':
+          description: FAQs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Faq' }
+    post:
+      tags: [Content]
+      summary: Upsert FAQ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpsertFaqDto' }
+      responses:
+        '200':
+          description: FAQ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Faq' }
+
+  /api/content/subscribe:
+    post:
+      tags: [Content]
+      summary: Subscribe newsletter (public)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubscribeDto' }
+      responses:
+        '200':
+          description: Subscribed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NewsletterSubscription' }
+        '409': { description: Already subscribed }
+
+  /api/dashboard/campaign-progress:
+    get:
+      tags: [Dashboard]
+      summary: Campaign progress
+      responses:
+        '200':
+          description: Rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CampaignProgressRow' }
+
+  /api/dashboard/session-roster:
+    get:
+      tags: [Dashboard]
+      summary: Session roster
+      responses:
+        '200':
+          description: Rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SessionRosterRow' }
+
+  /api/dashboard/reconcile-summary:
+    get:
+      tags: [Dashboard]
+      summary: Reconcile summary
+      responses:
+        '200':
+          description: Rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ReconcileSummaryRow' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # DTOs
+    RegisterUserDto:
+      type: object
+      required: [email, password, fullName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        fullName: { type: string }
+        phone: { type: string, nullable: true }
+    LoginDto:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    CreateUserDto:
+      type: object
+      required: [Email, PasswordHash, FullName]
+      properties:
+        Email: { type: string, format: email }
+        PasswordHash: { type: string, description: "BCrypt hash or plain if server hashes (depends on controller)" }
+        FullName: { type: string }
+        Phone: { type: string, nullable: true }
+    AssignRoleDto:
+      type: object
+      required: [UserId, RoleCode]
+      properties:
+        UserId: { type: string, format: uuid }
+        RoleCode: { type: string }
+
+    CreateCampaignDto:
+      type: object
+      required: [Title]
+      properties:
+        Title: { type: string }
+        Description: { type: string, nullable: true }
+        Location: { type: string, nullable: true }
+        StartDate: { type: string, format: date, nullable: true }
+        EndDate: { type: string, format: date, nullable: true }
+        GoalAmount: { type: number, format: double, nullable: true }
+        GoalVolunteers: { type: integer, nullable: true }
+    UpdateCampaignStatusDto:
+      type: object
+      required: [Status]
+      properties:
+        Status: { $ref: '#/components/schemas/CampaignStatus' }
+
+    CreateSessionDto:
+      type: object
+      required: [CampaignId, SessionDate, Shift, Status]
+      properties:
+        CampaignId: { type: string, format: uuid }
+        Title: { type: string, nullable: true }
+        SessionDate: { type: string, format: date }
+        Shift: { $ref: '#/components/schemas/SessionShift' }
+        Quota: { type: integer, nullable: true }
+        Status: { $ref: '#/components/schemas/SessionStatus' }
+        PlaceName: { type: string, nullable: true }
+        Lat: { type: number, format: double, nullable: true }
+        Lng: { type: number, format: double, nullable: true }
+        GeoRadiusM: { type: integer, nullable: true }
+
+    CreateRegistrationDto:
+      type: object
+      required: [UserId, CampaignId]
+      properties:
+        UserId: { type: string, format: uuid }
+        CampaignId: { type: string, format: uuid }
+        SessionId: { type: string, format: uuid, nullable: true }
+    ReviewRegistrationDto:
+      type: object
+      required: [Status]
+      properties:
+        Status: { $ref: '#/components/schemas/RegistrationStatus' }
+        RejectReason: { type: string, nullable: true }
+
+    SubmitVolunteerAppDto:
+      type: object
+      required: [UserId]
+      properties:
+        UserId: { type: string, format: uuid }
+        Skills: { type: string, nullable: true }
+        Availability: { type: string, nullable: true }
+    ReviewVolunteerAppDto:
+      type: object
+      required: [Status]
+      properties:
+        Status: { $ref: '#/components/schemas/AppReviewStatus' }
+        RejectReason: { type: string, nullable: true }
+
+    CreateCheckinDto:
+      type: object
+      required: [SessionId, UserId, Method]
+      properties:
+        SessionId: { type: string, format: uuid }
+        UserId: { type: string, format: uuid }
+        Method: { $ref: '#/components/schemas/CheckinMethod' }
+        Lat: { type: number, format: double, nullable: true }
+        Lng: { type: number, format: double, nullable: true }
+        EvidenceNote: { type: string, nullable: true }
+
+    CreateMediaDto:
+      type: object
+      required: [CampaignId, CheckinId, Url]
+      properties:
+        CampaignId: { type: string, format: uuid }
+        CheckinId: { type: string, format: uuid }
+        Url: { type: string }
+        PublicId: { type: string, nullable: true }
+        ThumbUrl: { type: string, nullable: true }
+        Format: { type: string, nullable: true }
+
+    UpsertPostDto:
+      type: object
+      required: [CampaignId, Title, Status]
+      properties:
+        CampaignId: { type: string, format: uuid }
+        Title: { type: string }
+        ContentMd: { type: string, nullable: true }
+        CoverUrl: { type: string, nullable: true }
+        Status: { $ref: '#/components/schemas/PostStatus' }
+
+    UpsertFaqDto:
+      type: object
+      required: [Question]
+      properties:
+        Question: { type: string }
+        AnswerMd: { type: string, nullable: true }
+        Tags:
+          type: array
+          nullable: true
+          items: { type: string }
+        OrderNo: { type: integer, nullable: true }
+
+    SubscribeDto:
+      type: object
+      required: [Email, Consent]
+      properties:
+        Email: { type: string, format: email }
+        Consent: { type: boolean }
+
+    # Entities / Responses
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        full_name: { type: string }
+        phone: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/UserStatus' }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/Role' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Role:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string, nullable: true }
+
+    PagedUsers:
+      type: object
+      properties:
+        total: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/User' }
+
+    Campaign:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        start_date: { type: string, format: date, nullable: true }
+        end_date: { type: string, format: date, nullable: true }
+        goal_amount: { type: number, format: double, nullable: true }
+        collected_amount: { type: number, format: double, nullable: true }
+        goal_volunteers: { type: integer, nullable: true }
+        status: { $ref: '#/components/schemas/CampaignStatus' }
+        created_by: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PagedCampaigns:
+      type: object
+      properties:
+        total: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Campaign' }
+
+    Session:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        title: { type: string, nullable: true }
+        session_date: { type: string, format: date }
+        shift: { $ref: '#/components/schemas/SessionShift' }
+        quota: { type: integer, nullable: true }
+        approved_volunteers: { type: integer }
+        status: { $ref: '#/components/schemas/SessionStatus' }
+        place_name: { type: string, nullable: true }
+        lat: { type: number, format: double, nullable: true }
+        lng: { type: number, format: double, nullable: true }
+        geo_radius_m: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time, nullable: true }
+
+    VolunteerRegistration:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        session_id: { type: string, format: uuid, nullable: true }
+        status: { $ref: '#/components/schemas/RegistrationStatus' }
+        applied_at: { type: string, format: date-time }
+        reviewed_by: { type: string, format: uuid, nullable: true }
+        reviewed_at: { type: string, format: date-time, nullable: true }
+        reject_reason: { type: string, nullable: true }
+    PagedRegistrations:
+      type: object
+      properties:
+        total: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/VolunteerRegistration' }
+
+    VolunteerApplication:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        skills: { type: string, nullable: true }
+        availability: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/AppReviewStatus' }
+        reviewed_by: { type: string, format: uuid, nullable: true }
+        reviewed_at: { type: string, format: date-time, nullable: true }
+        reject_reason: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    PagedVolunteerApplications:
+      type: object
+      properties:
+        total: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/VolunteerApplication' }
+
+    Checkin:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        session_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        checkin_time: { type: string, format: date-time }
+        method: { $ref: '#/components/schemas/CheckinMethod' }
+        status: { $ref: '#/components/schemas/CheckinStatus' }
+        lat: { type: number, format: double, nullable: true }
+        lng: { type: number, format: double, nullable: true }
+        evidence_note: { type: string, nullable: true }
+
+    MediaAsset:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        uploader_id: { type: string, format: uuid, nullable: true }
+        checkin_id: { type: string, format: uuid }
+        url: { type: string }
+        public_id: { type: string, nullable: true }
+        thumb_url: { type: string, nullable: true }
+        format: { type: string, nullable: true }
+        uploaded_at: { type: string, format: date-time }
+
+    Donation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        donor_name: { type: string, nullable: true }
+        donor_email: { type: string, nullable: true }
+        amount: { type: number, format: double }
+        currency: { $ref: '#/components/schemas/Currency' }
+        wish_to_show_name: { type: boolean }
+        message: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        gateway: { $ref: '#/components/schemas/DonationGateway' }
+        order_code: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/DonationStatus' }
+        paid_at: { type: string, format: date-time, nullable: true }
+
+    Post:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        title: { type: string }
+        content_md: { type: string, nullable: true }
+        cover_url: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/PostStatus' }
+        published_at: { type: string, format: date-time, nullable: true }
+
+    Faq:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        question: { type: string }
+        answer_md: { type: string, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+          nullable: true
+        order_no: { type: integer, nullable: true }
+
+    NewsletterSubscription:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        consent: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    CampaignProgressRow:
+      type: object
+      properties:
+        campaign_id: { type: string, format: uuid }
+        title: { type: string }
+        goal_amount: { type: number, format: double, nullable: true }
+        collected_amount: { type: number, format: double, nullable: true }
+        sessions: { type: integer, nullable: true }
+        volunteers: { type: integer, nullable: true }
+
+    SessionRosterRow:
+      type: object
+      properties:
+        session_id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        session_date: { type: string, format: date }
+        shift: { $ref: '#/components/schemas/SessionShift' }
+        quota: { type: integer, nullable: true }
+        approved_volunteers: { type: integer, nullable: true }
+        is_full: { type: boolean, nullable: true }
+
+    ReconcileSummaryRow:
+      type: object
+      properties:
+        fund_tx_id: { type: string, format: uuid }
+        bank_stmt_id: { type: string, format: uuid }
+        fund_amount: { type: number, format: double }
+        bank_amount: { type: number, format: double }
+        score: { type: number, format: double }
+        decision: { $ref: '#/components/schemas/ReconcileDecision' }
+
+    # Enums
+    UserStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    AppReviewStatus:
+      type: string
+      enum: [PENDING_REVIEW, APPROVED, REJECTED]
+    RegistrationStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+    CampaignStatus:
+      type: string
+      enum: [PLANNING, ONGOING, DONE, CANCELLED]
+    SessionStatus:
+      type: string
+      enum: [PLANNED, ONGOING, DONE]
+    SessionShift:
+      type: string
+      enum: [MORNING, AFTERNOON, EVENING]
+    CheckinMethod:
+      type: string
+      enum: [QR, MANUAL]
+    CheckinStatus:
+      type: string
+      enum: [ON_TIME, LATE, INVALID]
+    DonationGateway:
+      type: string
+      enum: [MOMO, VNPAY, STRIPE]
+    DonationStatus:
+      type: string
+      enum: [PENDING, PAID, FAILED, CANCELLED]
+    Currency:
+      type: string
+      enum: [VND, USD, EUR]
+    ReconcileDecision:
+      type: string
+      enum: [AUTO, ACCEPT, REJECT, REVIEW, UNMATCH]
+    PostStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED]

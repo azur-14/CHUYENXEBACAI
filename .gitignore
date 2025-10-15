@@ -361,3 +361,48 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ==== CHUYENXEBACAI project-specific ignores ====
+
+# Local appsettings (đừng commit secrets)
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# .NET User Secrets (metadata file đôi khi xuất hiện nếu lỡ copy)
+**/secrets.json
+
+# Docker & env cục bộ (nếu chứa secret)
+.env
+.env.*
+
+# Logs & dumps
+*.log
+logs/
+*.dmp
+
+# Tooling IDE khác
+.idea/
+.vscode/
+
+# EF Core design-time (nếu tool tạo tạm)
+**/Migrations/~*
+**/obj/Debug/net*/refint/
+
+# Publish outputs
+publish/
+*.PublishSettings
+
+# Test artifacts / coverage (nếu chạy test)
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# pgAdmin/psql export tạm (nếu bạn lưu trong repo)
+sql/export/
+sql/tmp/
